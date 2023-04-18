@@ -3,6 +3,7 @@ forked by https://github.com/aurvis/gopromax-frame-extractor
 """
 
 import argparse
+import logging
 from curses import meta
 import os
 import sys
@@ -133,7 +134,7 @@ def gopro360max_stitch(video_file: str,
     script_dir = os.path.dirname(os.path.realpath(__file__))
 
     frame_delta = 1.0 / frame_rate
-    print(f"frame_delta: {frame_delta}")
+    logging.info(f"frame_delta: {frame_delta}")
 
     assert_file_exists(video_file, "video file")
 
@@ -148,30 +149,30 @@ def gopro360max_stitch(video_file: str,
     #
     # Frame Extraction
     #
-    print("\n#\n# Extract Frames\n#")
+    logging.info("\n#\n# Extract Frames\n#")
     t0_folder = os.path.join(output_folder, "track0")
     t5_folder = os.path.join(output_folder, "track5")
     make_directory(t0_folder, remove_if_present=True)
     make_directory(t5_folder, remove_if_present=True)
 
     cmd = f"ffmpeg -i {video_file} -map 0:0 -r {frame_rate} -q:v {quality} {t0_folder}/img%04d.jpg -map 0:5 -r {frame_rate} -q:v {quality} {t5_folder}/img%04d.jpg"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     #
     # Equirectangular
     #
-    print("\n#\n# Compute Equirectangular Frames\n#")
+    logging.info("\n#\n# Compute Equirectangular Frames\n#")
     no_frames = number_of_files(t0_folder)
-    print(f"number of frames extracted: {no_frames}")
+    logging.info(f"number of frames extracted: {no_frames}")
     cmd = f"{eac_stitcher_exe} -w 4096 -n 1 -m {no_frames} {output_folder}/track%d/img%04d.jpg"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
     frames_folder = os.path.join(output_folder, "frames")
     make_directory(frames_folder, remove_if_present=True)
     move_all_files(t0_folder, frames_folder, "*_sphere.jpg")
     if number_of_files(frames_folder) == 0:
-        print("no sphere files extracted.")
+        logging.info("no sphere files extracted.")
         sys.exit(1)
     delete_directory(t0_folder)
     delete_directory(t5_folder)
@@ -179,46 +180,46 @@ def gopro360max_stitch(video_file: str,
     #
     # Extract Metadata
     #
-    print("\n#\n# Extract Metadata\n#")
+    logging.info("\n#\n# Extract Metadata\n#")
     metadata_folder = os.path.join(output_folder, "metadata")
     make_directory(metadata_folder, remove_if_present=True)
 
     gps_track_file = os.path.join(metadata_folder, "gps_track.gpx")
     get_gpx_fmt_url()
     cmd = f"exiftool -ee -p gpx.fmt {video_file} > {gps_track_file}"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     metadata_xml_file = os.path.join(metadata_folder, "metadata_all.xml")
     cmd = f"exiftool -ee -G3 -api LargeFileSupport=1 -X {video_file} > {metadata_xml_file}"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     cmd = f"exiftool -G -a {video_file} > {metadata_folder}/metadata.txt"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     #
     # ADD Metadata to the frames
     #
-    print("\n#\n# Adde Metadata to the frames\n#")
+    logging.info("\n#\n# Adde Metadata to the frames\n#")
     # extract gps start datetime:
     gps_start_time = get_gps_date_time(os.path.join(metadata_folder, 'metadata_all.xml'))
     assert (gps_start_time != "")
-    print(f"GPSDateTime: {gps_start_time}")
+    logging.info(f"GPSDateTime: {gps_start_time}")
     # update datetimeoriginal for all frames to the initial time first
     cmd = f'exiftool -datetimeoriginal="{gps_start_time}" {frames_folder}'
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
     # this just increments datetime original with the frame delta
     cmd = "exiftool -fileorder FileName -ext jpg '-datetimeoriginal+<0:0:${filesequence;$_*=%f}' %s" % (
         frame_delta, frames_folder)
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     # geotag the images
     cmd = "exiftool -ext jpg -geotag %s '-geotime<${DateTimeOriginal}+00:00' %s" % (gps_track_file, frames_folder)
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
 
     cmd = f"exiftool -CameraElevationAngle=360 " \
@@ -231,8 +232,8 @@ def gopro360max_stitch(video_file: str,
           f"-FullPanoWidthPixels=4096 " \
           f"-FullPanoHeightPixels=1344 " \
           f"-CroppedAreaLeftPixels=0 -CroppedAreaTopPixels=0 {frames_folder}"
-    print(f"cmd: {cmd}")
+    logging.info(f"cmd: {cmd}")
     run_command(cmd, show_progress=False)
     remove_files(frames_folder, "*.jpg_original")
 
-    print("\n")
+    logging.info("\n")

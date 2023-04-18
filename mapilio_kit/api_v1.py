@@ -1,6 +1,7 @@
 import os
 import requests
 from typing import Union
+import logging
 
 MAPILIO_GRAPH_API_ENDPOINT = os.getenv(
     "MAPILIO_GRAPH_API_ENDPOINT", "https://end.mapilio.com/api/"
@@ -21,11 +22,14 @@ URL_Sequences = MAPILIO_GRAPH_API_ENDPOINT + MAPILIO_GRAPH_API_URL_FUNCTION + "g
 URL_Images = MAPILIO_GRAPH_API_ENDPOINT + MAPILIO_GRAPH_API_URL_FUNCTION + "getUploadsImagesWithProject/"
 
 
+
 def get_upload_token(email: str, password: str) -> dict:
     resp = requests.post(
         f"{MAPILIO_GRAPH_API_ENDPOINT}login",
         json={"email": email, "password": password},
     )
+    response = resp.json()
+    logging.info(response)
     resp.raise_for_status()
 
     return resp.json()
