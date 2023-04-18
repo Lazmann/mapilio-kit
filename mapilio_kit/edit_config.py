@@ -1,3 +1,4 @@
+import logging
 import os
 
 from . import login
@@ -49,6 +50,7 @@ def edit_config(
                 "Enter the Mapilio mail you would like to (re)authenticate: "
             )
         else:
+            logging.info("Username or password is empty")
             return
 
     # config file must exist at this step
