@@ -2,7 +2,7 @@ import sys
 from typing import List, Optional, Tuple, Type, Union, Any
 import datetime
 import os
-
+from PIL import Image
 import exifread
 
 from .geo import normalize_bearing
@@ -326,6 +326,9 @@ class ExifRead:
         height, _ = self._extract_alternative_fields(
             fields_h, default="none", field_type=int
         )
+        if height or width == "none":
+            image = Image.open(self.filename)
+            width, height = image.size
         image_size = f"{width}x{height}"
         return image_size
 
