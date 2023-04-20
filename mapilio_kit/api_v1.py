@@ -30,6 +30,7 @@ def get_upload_token(email: str, password: str) -> dict:
     )
     response = resp.json()
     logging.info(response)
+    logging.info(resp)
     resp.raise_for_status()
 
     return resp.json()
