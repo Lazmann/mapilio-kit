@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 
 DEFAULT_CHUNK_SIZE = 1024 * 1024 * 64
 
-
+update_progress = 0
 class UploadService:
     user_access_token: str
     # This amount of data that will be loaded to memory
@@ -51,18 +51,19 @@ class UploadService:
         offset: T.Optional[int] = None,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ):
+        global update_progress
         if chunk_size <= 0:
             raise ValueError("Expect positive chunk size")
 
         email = user_items['SettingsUsername']
         if offset is None:
             offset = self.fetch_offset(email=email)
-
-        data.seek(offset, io.SEEK_CUR) # noqa
-
-
+        received = 0
+        data.seek(offset, io.SEEK_CUR)  # noqa
         while True:
             chunk = data.read(chunk_size)
+            received += len(chunk)
+            update_progress = int(received / self.entity_size * 100)
             files = {'chunk': (self.session_key, chunk, "multipart/form-data")}
             headers = {
                 'Connection': "keep-alive",
