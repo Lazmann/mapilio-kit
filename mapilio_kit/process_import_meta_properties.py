@@ -128,7 +128,7 @@ def get_import_meta_properties_exif(image: str) -> MetaProperties:
 
     return import_meta_data_properties
 
-
+update_progress=0
 def process_import_meta_properties(
     import_path,
     orientation=None,
@@ -144,6 +144,7 @@ def process_import_meta_properties(
     exclude_import_path=False,
     exclude_path=None,
 ) -> None:
+    global update_progress
     if not import_path or not os.path.isdir(import_path):
         raise RuntimeError(f"Image directory {import_path} does not exist")
 
@@ -157,7 +158,7 @@ def process_import_meta_properties(
 
     if orientation is not None:
         orientation = processing.format_orientation(orientation)
-
+    count = 0
     for image in tqdm(
         process_file_list, unit="files", desc="Processing import meta properties"
     ):
@@ -179,3 +180,5 @@ def process_import_meta_properties(
             exclude_path,
         )
         image_log.log_in_memory(image, "import_meta_data_process", desc)
+        count += 1
+        update_progress = (round(count / len(process_file_list) * 100))

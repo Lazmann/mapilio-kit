@@ -198,7 +198,7 @@ class Notifier:
         }
         ipc.send("upload", payload)
 
-
+progress_compressing = 0
 def _zip_sequence(
         image_dir: str,
         sequences: T.Dict[str, types.FinalImageDescription],
@@ -216,7 +216,8 @@ def _zip_sequence(
     sequence_md5 = hashlib.md5()
 
     file_list.sort(key=lambda path: sequences[path]["captureTime"])
-
+    count = 0
+    global progress_compressing
     # compressing
     with zipfile.ZipFile(fp, "w", zipfile.ZIP_DEFLATED) as ziph:
         for file in tqdm(file_list, unit="files", desc=tqdm_desc):
@@ -227,6 +228,8 @@ def _zip_sequence(
             image_bytes = edit.dump_image_bytes()
             sequence_md5.update(image_bytes)
             ziph.writestr(relpath, image_bytes)
+            count += 1
+            progress_compressing = (round(count / len(file_list) * 100))
 
     return sequence_md5.hexdigest()
 
