@@ -64,6 +64,8 @@ class UploadService:
             chunk = data.read(chunk_size)
             received += len(chunk)
             update_progress = int(received / self.entity_size * 100)
+            if offset == self.entity_size:
+                update_progress = 100
             files = {'chunk': (self.session_key, chunk, "multipart/form-data")}
             headers = {
                 'Connection': "keep-alive",
